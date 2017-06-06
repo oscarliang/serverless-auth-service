@@ -1,0 +1,19 @@
+{
+  "name": "auth-service",
+  "version": "1.0.0",
+  "description": "",
+  "main": "handler.js",
+  "scripts": {
+    "debug": "node-debug sls offline"
+  },
+  "author": "oscar liang",
+  "license": "ISC",
+  "dependencies": {
+    "lodash": "^4.17.4",
+    "mysql": "^2.13.0",
+    "q": "^1.5.0"
+  },
+  "devDependencies": {
+    "serverless-offline": "^3.14.1"
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "mysql": {
+      "address": "10.10.10.10",
+      "port": "3306",
+      "db": "gridanalytics-cp",
+      "user": "root",
+      "pass": "acresta"
+  },
+  "redis": {
+      "address": "10.10.10.10",
+      "port": 6379
+  },
+  "grid":{
+  	"apiUrl" : "http://10.10.10.10/",
+  	"email" : "admin@acresta.com",
+  	"pin": "1111"
+  },
+  "logMinLevel": 0
+}
