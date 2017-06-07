@@ -8,7 +8,9 @@
   },
   "redis": {
       "address": "10.10.10.10",
-      "port": 6379
+      "port": 6379,
+      "defaultExpireTime" : 3600,
+      "prefix": "ww"
   },
   "grid":{
   	"apiUrl" : "http://10.10.10.10/",
