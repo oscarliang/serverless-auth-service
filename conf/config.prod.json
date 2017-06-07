@@ -2,7 +2,7 @@
   "mysql": {
       "address": "oscartechnology.com",
       "port": "3306",
-      "db": "gridanalytics-cp1",
+      "db": "gridanalytics-cp",
       "user": "remote",
       "pass": "acresta"
   },

@@ -9,9 +9,11 @@
   "author": "oscar liang",
   "license": "ISC",
   "dependencies": {
+    "async": "^2.4.1",
     "lodash": "^4.17.4",
     "mysql": "^2.13.0",
-    "q": "^1.5.0"
+    "q": "^1.5.0",
+    "validator": "^7.0.0"
   },
   "devDependencies": {
     "serverless-offline": "^3.14.1"
