@@ -1,6 +1,6 @@
-var AuthService = require('../../service/AuthService.js');
-var MysqlClient = require('../../util/MysqlClient.js');
-var Config = require('../../conf/Config.js');
+var AuthService = require('../../../service/AuthService.js');
+var Mysql = require('mysql');
+var Config = require('../../../conf/Config.js');
 var chai = require('chai');
 var should = chai.should();
 var expect = chai.expect;
@@ -38,7 +38,16 @@ describe('AuthService Test', function () {
 
         beforeEach(function () {
             const config = new Config();
-            const mysqlClient = new MysqlClient(config);
+            var mysqlConnection = Mysql.createConnection(
+                {
+                    host: "localhost"
+                });
+
+            //mock up a mysql connection    
+            mysqlMock = sinon.mock(mysqlConnection);
+
+            //pass the connection to the AuthService
+            var mysqlClient = { client: mysqlMock.object };
 
             authService = new AuthService(mysqlClient, "myquery", config, {});
             stub = sinon.stub(authService, "getUserListFromDb");

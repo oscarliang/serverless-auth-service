@@ -4,7 +4,7 @@
   "description": "",
   "main": "handler.js",
   "scripts": {
-    "test": "mocha test/**/AuthServiceLambdaTest.js",
+    "test": "mocha test/**/**",
     "debug": "node-debug sls offline"
   },
   "author": "oscar liang",
