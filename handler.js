@@ -8,6 +8,7 @@ var async = require('async');
 var RedisClient = require('./util/RedisClient.js');
 var ValidatorUtil = require('./util/ValidatorUtil.js');
 var RedisKeys = require('./util/RedisKeys.js');
+var HttpException =  require('./model/HttpException.js');
 
 
 module.exports.login = (event, context, callback) => {
@@ -61,17 +62,22 @@ module.exports.login = (event, context, callback) => {
         let userObj = data[0];
 
         //create a session in the redis
-        sessionService.createNewUserSession(userObj);
+        let token = sessionService.createNewUserSession(userObj);
 
         //close the redis connection
         redisClient.client.quit();
+
+        //return the response to client
+        let response = responseUtil.responseHandler(200, {"token" : token});
+        callback(null, response);
+      } else {
+        let noUserException = new HttpException(403, "Invalid email or pin", "UNAUTHORIZED");
+        callback(noUserException.parse());
       } 
-      //return the response to client
-      callback(null, userResponse);
     }
   ], (err, response) => {
     if (err)
-      callback(null, responseUtil.errorHandler(err.stateCode, { errorMessage: err.errorMessage }));
+      callback(null, responseUtil.errorHandler(err.stateCode, { errorMessage: err.errorMessage, errorCode: err.code }));
     callback(null, response);
   });
 

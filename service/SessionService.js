@@ -18,6 +18,7 @@ class SessionService {
         //sha1 the key
         let token = sha1(user.email + new Date());
         this.redisClient.setex(this.redisKeys.getNewUserSessionPrefix(token), this.config.redis.defaultExpireTime, JSON.stringify(user));
+        return token;
     }
 }
 

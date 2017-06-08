@@ -29,17 +29,20 @@ describe('Integration Test', function () {
                 }
             }
 
-            var resultBody = { "data": [] };
+            var resultBody = {
+                "errorMessage": "Invalid email or pin",
+                "errorCode": "UNAUTHORIZED"
+            }
 
             return LambdaTester(loginHandler)
                 .event(event)
                 .expectResult((result) => {
-                    expect(result).to.be.an('object').to.have.property('statusCode').to.equal(200);
+                    expect(result).to.be.an('object').to.have.property('statusCode').to.equal(403);
                     expect(result).to.have.property('body').to.equal(JSON.stringify(resultBody));
                 });
         });
 
-        it('should return a object with 400 statuscode and error message by wrong email input', function () {
+        it('should return a object with 403 statuscode and error message by wrong email input', function () {
             var event = {
                 "body": {
                     "email": "bill111",
@@ -47,17 +50,17 @@ describe('Integration Test', function () {
                 }
             }
 
-            var resultBody = { "errorMessage": "Please input correct username" };
+            var resultBody = { "errorMessage": "Please input correct username", "errorCode": "UNAUTHORIZED" };
 
             return LambdaTester(loginHandler)
                 .event(event)
                 .expectResult((result) => {
-                    expect(result).to.be.an('object').to.have.property('statusCode').to.equal(400);
+                    expect(result).to.be.an('object').to.have.property('statusCode').to.equal(403);
                     expect(result).to.have.property('body').to.equal(JSON.stringify(resultBody));
                 });
         });
 
-        it('should return a object with 400 statuscode and error message by wrong pin input', function () {
+        it('should return a object with 403 statuscode and error message by wrong pin input', function () {
             var event = {
                 "body": {
                     "email": "bill1@simble.io",
@@ -65,12 +68,12 @@ describe('Integration Test', function () {
                 }
             }
 
-            var resultBody = { "errorMessage": "Please input correct pin" };
+            var resultBody = { "errorMessage": "Please input correct pin", "errorCode": "UNAUTHORIZED" };
 
             return LambdaTester(loginHandler)
                 .event(event)
                 .expectResult((result) => {
-                    expect(result).to.be.an('object').to.have.property('statusCode').to.equal(400);
+                    expect(result).to.be.an('object').to.have.property('statusCode').to.equal(403);
                     expect(result).to.have.property('body').to.equal(JSON.stringify(resultBody));
                 });
         });
