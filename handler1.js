@@ -8,14 +8,13 @@ var async = require('async');
 var RedisClient = require('./util/RedisClient.js');
 var ValidatorUtil = require('./util/ValidatorUtil.js');
 var RedisKeys = require('./util/RedisKeys.js');
-var HttpException = require('./model/HttpException.js');
-
-
+var HttpException =  require('./model/HttpException.js');
+ 
+ 
 module.exports.login = (event, context, callback) => {
   let data = _.isObject(event.body) ? event.body : JSON.parse(event.body);
   const config = new Config();
-  var mysqlClient;
-
+ 
   async.waterfall([
     /**
      * Validate the input
@@ -23,21 +22,26 @@ module.exports.login = (event, context, callback) => {
     (callback) => {
       try {
         if (ValidatorUtil.validate(data.email, data.pin))
-          callback(null, data);
+          callback(null, data.email);
       } catch (exception) {
-        callback(exception);
+        callback(exception.parse());
       }
     },
     /**
      * get the data from the Mysql DB
      */
-    (data, callback) => {
-      mysqlClient = new MysqlClient(config);
-      let login = data;
-      var authService = new AuthService(mysqlClient, login, config, event);
-
+    (email, callback) => {
+      const mysqlClient = new MysqlClient(config);
+      let getUserSql = "SELECT email, pin, r.role, r.roleID, u.userID, active, term, logo, status FROM user as u " +
+        "inner join user_role as ur on  ur.userID = u.userID " +
+        "inner join role as r on r.roleID = ur.roleID " +
+        "WHERE lower(u.email) = ";
+      getUserSql += "'" + email + "'";
+ 
+      var authService = new AuthService(mysqlClient, getUserSql, config, event);
+ 
       //get the user data from the MySQL DB
-      authService.getUserFromDb().then((user) => {
+      authService.getUserListFromDb().then((user) => {
         callback(null, user);
       }).catch((err) => {
         callback(err);
@@ -49,46 +53,32 @@ module.exports.login = (event, context, callback) => {
     /**
      * create session in the Redis
      */
-    (user, callback) => {
-      // let data = JSON.parse(user.body).data;
-      if (!_.isUndefined(user) && user !== null) {
+    (userResponse, callback) => {
+      let data = JSON.parse(userResponse.body).data;
+      if (data.length > 0) {
         let redisClient = new RedisClient(config);
         let redisKeys = new RedisKeys(config);
         let sessionService = new SessionService(redisClient, config, redisKeys);
-
+        let userObj = data[0];
+ 
         //create a session in the redis
-        let token = sessionService.createNewUserSession(user);
-
+        let token = sessionService.createNewUserSession(userObj);
+ 
         //close the redis connection
         redisClient.client.quit();
-
+ 
         //return the response to client
-        // let response = responseUtil.responseHandler(200, { "token": token });
-        user.token = token;
-        callback(null, user);
+        let response = responseUtil.responseHandler(200, {"token" : token});
+        callback(null, response);
       } else {
         let noUserException = new HttpException(403, "Invalid email or pin", "UNAUTHORIZED");
-        callback(noUserException);
-      }
-    },
-  ], (err, user) => {
-    if (err) {
-      callback(null, responseUtil.errorHandler(err.stateCode, { errorMessage: err.errorMessage, errorCode: err.code }));
-    } else {
-      //re-orginize response
-      let response = responseUtil.responseHandler(200,
-        {
-          "token": user.token,
-          "role": user.role,
-          "level": user.level.reallevel,
-          "term": user.term,
-          "logo": user.log,
-          "email": data.email,
-          "modules": user.modules
-        }
-      );
-      callback(null, response);
+        callback(noUserException.parse());
+      } 
     }
+  ], (err, response) => {
+    if (err)
+      callback(null, responseUtil.errorHandler(err.stateCode, { errorMessage: err.errorMessage, errorCode: err.code }));
+    callback(null, response);
   });
-
+ 
 };

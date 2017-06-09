@@ -1,46 +1,119 @@
 "use strict";
-
+var HttpException = require('../model/HttpException.js');
 var responseUtil = require('../util/ResponseUtil.js');
+var userService = require('./UserService.js');
+var permissionService = require('./PermissionService.js');
 var Q = require('q');
+var _ = require('lodash');
+var async = require('async');
 
 /**
  * Authentication service
  */
 class AuthService {
-    constructor(mysqlClient, sqlQuery, config, event) {
-        this.sqlQuery = sqlQuery;
+    constructor(mysqlClient, login, config, event) {
         this.config = config;
+        this.login = login;
         this.event = event;
         this.dbClient = mysqlClient.client;
     }
 
-    _authQueryHandler(err, results, event, envconfig) {
-        let config = envconfig;
-        if (err) {
-            console.error("Server Error: " + err);
-
-            //enable the input request log to the response if needed
-            let errorObj = config.event ? { errorMessage: "500 Internal Server Error", input: event } : { errorMessage: "500 Internal Server Error" };
-            return responseUtil.errorHandler(500, errorObj);
-        }
-        let messageObj = config.event ? { data: results, input: event } : { data: results };
-        return responseUtil.responseHandler(200, messageObj);
-    }
-
-    getUserListFromDb(cb) {
-        var self = this;
+    getUserFromDb(cb) {
         let deferred = Q.defer();
-        this.dbClient.query(this.sqlQuery, (err, results) => {
-            if (err) {
-                console.error(err);
-                deferred.resolve(responseUtil.errorHandler(500, {errorMessage: "Error Establishing A Database Connection"}));
+        async.waterfall([
+            //get user from the db
+            (callback) => {
+                this.getUserProcess(this.dbClient, this.login.email, (err, user) => {
+                    if (err)
+                        return callback(err);
+                    return callback(null, user);
+                })
+            },
+
+            //get user level from db
+            (user, callback) => {
+                this.attachUserLevelToUserProcess(this.dbClient, user, (err, user) => {
+                    if (err)
+                        return callback(err);
+                    return callback(null, user);
+                });
+            },
+
+            //get modules from DB
+            (user, callback) => {
+                this.attachModuleToUserProcess(this.dbClient, user, (err, modules) => {
+                    if (err)
+                        return callback(err);
+                    return callback(null, user);
+                });
             }
-            let response = self._authQueryHandler(err, results, self.event, self.config);
+        ], (err, response) => {
+            if (err)
+                deferred.reject(err);
             deferred.resolve(response);
-            // this.dbClient.end();
         });
         return deferred.promise.nodeify(cb);
     }
+
+    getUserProcess(dbClient, email, callback) {
+        userService.getUser(this.dbClient, this.login.email, (err, user) => {
+            if (err) {
+                return callback(err);
+            }
+
+            //if no user
+            if (_.isNull(user)) {
+                return callback(new HttpException(403, "Invalid email or pin", "FORBIDDEN"));
+            }
+
+            //if no user
+            if (user.length === 0) {
+                return callback(new HttpException(403, "Invalid email or pin", "FORBIDDEN"));
+            }
+
+            //if is a array, only select first element
+            if (_.isArray(user))
+                user = user[0];
+
+            //if the user is not actived
+            if (!user.active) {
+                return callback(new HttpException(401, "Account has not been activated", "UNAUTHORIZED"));
+            }
+
+            //if the user is disabled
+            if (!user.status) {
+                return callback(new HttpException(401, "Account has been disabled", "UNAUTHORIZED"));
+            }
+
+            return callback(null, user);
+        });
+    }
+
+    attachUserLevelToUserProcess(dbClient, user, callback) {
+        userService.getUserLevelObjByUserID(this.dbClient, user.userID, (err, userLevel) => {
+            if (err) {
+                return callback(err);
+            }
+            user.level = userLevel;
+            return callback(null, user);
+        });
+    }
+
+    attachModuleToUserProcess(dbClient, user, callback) {
+        permissionService.getModuleNamesByRoleID(this.dbClient, user.roleID, (err, modules) => {
+            if (err) {
+                return callback(err);
+            }
+            if (_.indexOf(modules, "full") !== -1)
+                user.level.level = 'admin';
+
+            user.level['reallevel'] = user.level.level;
+
+            user.modules = modules;
+            return callback(null, user);
+        });
+    }
+
 }
 
 module.exports = AuthService;

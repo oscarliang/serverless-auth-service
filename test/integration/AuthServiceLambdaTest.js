@@ -4,8 +4,8 @@ const chai = require('chai');
 const expect = chai.expect;
 
 describe('Integration Test', function () {
-    describe('Call login', function () {
-        it('should return a object with statusCode and body by finding an account', function () {
+    describe('- Call login function', function () {
+        it('- should return a object with statusCode and body by finding an account', function () {
             var anObject = {
                 "body": {
                     "email": "bill1@simble.io",
@@ -21,7 +21,7 @@ describe('Integration Test', function () {
                 });
         });
 
-        it('should return a object with empty body by not finding an account', function () {
+        it('- should return a object with empty body by not finding an account', function () {
             var event = {
                 "body": {
                     "email": "bill111@simble.io",
@@ -29,20 +29,17 @@ describe('Integration Test', function () {
                 }
             }
 
-            var resultBody = {
-                "errorMessage": "Invalid email or pin",
-                "errorCode": "UNAUTHORIZED"
-            }
-
             return LambdaTester(loginHandler)
                 .event(event)
                 .expectResult((result) => {
                     expect(result).to.be.an('object').to.have.property('statusCode').to.equal(403);
-                    expect(result).to.have.property('body').to.equal(JSON.stringify(resultBody));
+
+                    let body = JSON.parse(result.body);
+                    expect(body).to.have.property('errorCode').to.equal("FORBIDDEN");
                 });
         });
 
-        it('should return a object with 403 statuscode and error message by wrong email input', function () {
+        it('- should return a object with 403 statuscode and error message by wrong email input', function () {
             var event = {
                 "body": {
                     "email": "bill111",
@@ -50,17 +47,17 @@ describe('Integration Test', function () {
                 }
             }
 
-            var resultBody = { "errorMessage": "Please input correct username", "errorCode": "UNAUTHORIZED" };
-
             return LambdaTester(loginHandler)
                 .event(event)
                 .expectResult((result) => {
                     expect(result).to.be.an('object').to.have.property('statusCode').to.equal(403);
-                    expect(result).to.have.property('body').to.equal(JSON.stringify(resultBody));
+
+                    let body = JSON.parse(result.body);
+                    expect(body).to.have.property('errorCode').to.equal("FORBIDDEN");
                 });
         });
 
-        it('should return a object with 403 statuscode and error message by wrong pin input', function () {
+        it('- should return a object with 403 statuscode and error message by wrong pin input', function () {
             var event = {
                 "body": {
                     "email": "bill1@simble.io",
@@ -68,13 +65,65 @@ describe('Integration Test', function () {
                 }
             }
 
-            var resultBody = { "errorMessage": "Please input correct pin", "errorCode": "UNAUTHORIZED" };
-
             return LambdaTester(loginHandler)
                 .event(event)
                 .expectResult((result) => {
                     expect(result).to.be.an('object').to.have.property('statusCode').to.equal(403);
-                    expect(result).to.have.property('body').to.equal(JSON.stringify(resultBody));
+
+                    let body = JSON.parse(result.body);
+                    expect(body).to.have.property('errorCode').to.equal("FORBIDDEN");
+                });
+        });
+
+        it('- should return a customer level account with customer level login', function () {
+            var anObject = {
+                "body": {
+                    "email": "customer@simble.io",
+                    "pin": 11111111
+                }
+            }
+
+            return LambdaTester(loginHandler)
+                .event(anObject)
+                .expectResult((result) => {
+                    expect(result).to.be.an('object').to.have.property('statusCode').to.equal(200);
+                    let body = JSON.parse(result.body);
+                    expect(body).to.have.property('level').to.equal('customer');
+                });
+        });
+
+        it('- should return a reseller level account with reseller level login', function () {
+            var anObject = {
+                "body": {
+                    "email": "reseller@simble.io",
+                    "pin": 11111111
+                }
+            }
+
+            return LambdaTester(loginHandler)
+                .event(anObject)
+                .expectResult((result) => {
+                    expect(result).to.be.an('object').to.have.property('statusCode').to.equal(200);
+                    let body = JSON.parse(result.body);
+                    expect(body).to.have.property('level').to.equal('reseller');
+                });
+        });
+
+        it('- should return a admin level account with reseller admin login', function () {
+            var anObject = {
+                "body": {
+                    "email": "admin@acresta.com",
+                    "pin": 11111111
+                }
+            }
+
+            return LambdaTester(loginHandler)
+                .event(anObject)
+                .expectResult((result) => {
+                    expect(result).to.be.an('object').to.have.property('statusCode').to.equal(200);
+
+                    let body = JSON.parse(result.body);
+                    expect(body).to.have.property('level').to.equal('admin');
                 });
         });
     });

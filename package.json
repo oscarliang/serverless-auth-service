@@ -4,7 +4,7 @@
   "description": "",
   "main": "handler.js",
   "scripts": {
-    "test": "mocha test/**/**",
+    "test": "mocha test/**/**/*Test.js test/**/*Test.js",
     "debug": "node-debug sls offline"
   },
   "author": "oscar liang",
