@@ -30,7 +30,7 @@ class AuthService {
                 })
             },
 
-            //get user level from db
+            //get user level(permission) from db
             (user, callback) => {
                 this.attachUserLevelToUserProcess(this.dbClient, user, (err, user) => {
                     if (err)
@@ -50,7 +50,8 @@ class AuthService {
         ], (err, response) => {
             if (err)
                 deferred.reject(err);
-            deferred.resolve(response);
+            else
+                deferred.resolve(response);
         });
         return deferred.promise.nodeify(cb);
     }

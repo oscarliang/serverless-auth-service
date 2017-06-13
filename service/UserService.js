@@ -3,6 +3,9 @@ var resellerService = require('./ResellerService.js');
 var _ = require('lodash');
 var async = require('async');
 
+/**
+ * get the user form the db
+ */
 exports.getUser = (dbClient, email, callback) => {
     dbClient.query(sqlHelper.getUserSql(email), (err, data) => {
         if (err)
@@ -12,7 +15,7 @@ exports.getUser = (dbClient, email, callback) => {
 }
 
 /**
- * get the user's user level Object
+ * get the user's level Object
  */
 exports.getUserLevelObjByUserID = (dbClient, userID, callback) => {
     let userLevelOjb = {
@@ -26,6 +29,7 @@ exports.getUserLevelObjByUserID = (dbClient, userID, callback) => {
             return callback(err);
 
         async.forEachSeries(userCustomerObjs, (userCustomerObj, seriesCallBack) => {
+            // get all the account information if it is a "admin" level user
             if (userCustomerObj.level === 'admin') {
                 userLevelOjb.level = 'admin';
 
@@ -54,6 +58,7 @@ exports.getUserLevelObjByUserID = (dbClient, userID, callback) => {
                     });
             }
 
+            // get all the account information if it is a "reseller" level user
             if (userCustomerObj.level === 'reseller') {
                 resellerService.getCustomerListByResellerID(dbClient, userCustomerObj.customerID, (err, customerIDs) => {
                     if (err)
@@ -70,6 +75,7 @@ exports.getUserLevelObjByUserID = (dbClient, userID, callback) => {
                 });
             }
 
+            // get all the account information if it is a "customer" level user
             if (userCustomerObj.level === 'customer') {
                 userLevelOjb.customerIDs = _.concat(userLevelOjb.customerIDs, userCustomerObj.customerID);
                 userLevelOjb.resellerIDs = _.concat(userLevelOjb.resellerIDs, userCustomerObj.resellerID);
@@ -77,6 +83,7 @@ exports.getUserLevelObjByUserID = (dbClient, userID, callback) => {
                 return seriesCallBack();
             }
 
+            // get all the account information if it is a "user" level user
             if (userCustomerObj.level === 'user') {
                 userLevelOjb.customerIDs = _.concat(userLevelOjb.customerIDs, userCustomerObj.customerID);
                 userLevelOjb.resellerIDs = _.concat(userLevelOjb.resellerIDs, userCustomerObj.resellerID);
