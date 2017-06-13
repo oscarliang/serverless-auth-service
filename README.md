@@ -1,3 +1,5 @@
+# Serverless-auth-service
+
 ## Install
 
 Install the node packages via:
